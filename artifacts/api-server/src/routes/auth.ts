@@ -226,7 +226,12 @@ router.post("/auth/resend-otp", async (req: Request, res: Response) => {
     return;
   }
 
-  await createAndSendOtp(email, user.name);
+  try {
+    await createAndSendOtp(email, user.name);
+  } catch (emailErr) {
+    console.error("[OTP] Failed to resend email:", (emailErr as Error).message);
+  }
+
   res.json({ ok: true });
 });
 
