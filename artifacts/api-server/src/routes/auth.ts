@@ -145,7 +145,11 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     await db.insert(usersTable).values({ name, username, email, passwordHash });
   }
 
-  await createAndSendOtp(email, name);
+  try {
+    await createAndSendOtp(email, name);
+  } catch (emailErr) {
+    console.error("[OTP] Failed to send email:", (emailErr as Error).message);
+  }
 
   res.status(200).json({ pending: true, email });
 });
