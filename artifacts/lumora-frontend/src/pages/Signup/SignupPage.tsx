@@ -71,10 +71,12 @@ function OtpInput({
   email,
   onSuccess,
   onBack,
+  initialDevOtp,
 }: {
   email: string;
   onSuccess: () => void;
   onBack: () => void;
+  initialDevOtp?: string;
 }) {
   const { verifyOtp, resendOtp } = useAuth();
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
@@ -82,6 +84,7 @@ function OtpInput({
   const [error, setError] = useState("");
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [devOtp, setDevOtp] = useState(initialDevOtp);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -144,6 +147,7 @@ function OtpInput({
       setResendCooldown(60);
       setDigits(["", "", "", "", "", ""]);
       setError("");
+      if (result.devOtp) setDevOtp(result.devOtp);
       inputRefs.current[0]?.focus();
     } else {
       setError(result.error ?? "Failed to resend.");
@@ -171,6 +175,15 @@ function OtpInput({
           <span className="font-medium" style={{ color: "#CFC8C2" }}>{email}</span>
         </p>
       </div>
+
+      {devOtp && (
+        <div className="flex flex-col gap-1 px-4 py-3 mb-5 text-sm"
+          style={{ background: "rgba(251,191,36,0.07)", borderRadius: 12, border: "1px solid rgba(251,191,36,0.2)" }}>
+          <p className="font-medium" style={{ color: "#FCD34D" }}>⚡ Dev mode — email not sent</p>
+          <p style={{ color: "#8E8178" }}>Your OTP code is:</p>
+          <p className="font-mono text-2xl font-bold tracking-[0.3em] mt-0.5" style={{ color: "#FCD34D" }}>{devOtp}</p>
+        </div>
+      )}
 
       <AnimatePresence>
         {error && (
@@ -253,6 +266,7 @@ export default function Signup() {
   const { signup } = useAuth();
   const [step, setStep] = useState<Step>("form");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingDevOtp, setPendingDevOtp] = useState<string | undefined>();
   const [form, setForm] = useState({ name: "", username: "", email: "", password: "", confirm: "" });
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -290,6 +304,7 @@ export default function Signup() {
     setLoading(false);
     if (!result.ok) { setErrors({ global: result.error }); return; }
     setPendingEmail(form.email);
+    setPendingDevOtp(result.devOtp);
     setStep("otp");
   }
 
@@ -472,6 +487,7 @@ export default function Signup() {
                 email={pendingEmail}
                 onSuccess={handleOtpSuccess}
                 onBack={() => setStep("form")}
+                initialDevOtp={pendingDevOtp}
               />
             )}
           </AnimatePresence>

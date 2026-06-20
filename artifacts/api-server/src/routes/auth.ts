@@ -24,19 +24,28 @@ function getAvatarInitials(name: string): string {
 }
 
 function makeTransport() {
-  const host = process.env["SMTP_HOST"] ?? "smtp.gmail.com";
-  const port = Number(process.env["SMTP_PORT"] ?? "587");
   const user = process.env["SMTP_USER"];
   const pass = process.env["SMTP_PASS"];
-
   if (!user || !pass) return null;
 
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+  const customHost = process.env["SMTP_HOST"];
+  if (customHost) {
+    const port = Number(process.env["SMTP_PORT"] ?? "587");
+    return nodemailer.createTransport({ host: customHost, port, secure: port === 465, auth: { user, pass } });
+  }
+
+  // Auto-detect provider from email domain
+  if (user.endsWith("@gmail.com") || user.endsWith("@googlemail.com")) {
+    return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  }
+  if (user.endsWith("@outlook.com") || user.endsWith("@hotmail.com") || user.endsWith("@live.com")) {
+    return nodemailer.createTransport({ service: "hotmail", auth: { user, pass } });
+  }
+  if (user.endsWith("@yahoo.com")) {
+    return nodemailer.createTransport({ service: "yahoo", auth: { user, pass } });
+  }
+
+  return nodemailer.createTransport({ host: "smtp.gmail.com", port: 587, secure: false, auth: { user, pass } });
 }
 
 async function sendOtpEmail(email: string, code: string, name: string): Promise<void> {
@@ -94,14 +103,23 @@ async function sendOtpEmail(email: string, code: string, name: string): Promise<
   }
 }
 
-async function createAndSendOtp(email: string, name: string): Promise<void> {
+async function createAndSendOtp(email: string, name: string): Promise<{ code: string; emailSent: boolean }> {
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
   await db.delete(otpVerificationsTable).where(eq(otpVerificationsTable.email, email));
   await db.insert(otpVerificationsTable).values({ email, code, expiresAt });
 
-  await sendOtpEmail(email, code, name);
+  let emailSent = false;
+  try {
+    await sendOtpEmail(email, code, name);
+    emailSent = true;
+  } catch (err) {
+    console.error("[OTP] Email send failed:", (err as Error).message);
+    console.log(`[OTP] DEV CODE for ${email}: ${code}`);
+  }
+
+  return { code, emailSent };
 }
 
 // POST /auth/register
@@ -145,13 +163,14 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     await db.insert(usersTable).values({ name, username, email, passwordHash });
   }
 
-  try {
-    await createAndSendOtp(email, name);
-  } catch (emailErr) {
-    console.error("[OTP] Failed to send email:", (emailErr as Error).message);
-  }
+  const { code, emailSent } = await createAndSendOtp(email, name);
+  const isDev = process.env["NODE_ENV"] !== "production";
 
-  res.status(200).json({ pending: true, email });
+  res.status(200).json({
+    pending: true,
+    email,
+    ...(isDev && !emailSent ? { devOtp: code } : {}),
+  });
 });
 
 // POST /auth/verify-otp
@@ -226,13 +245,13 @@ router.post("/auth/resend-otp", async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    await createAndSendOtp(email, user.name);
-  } catch (emailErr) {
-    console.error("[OTP] Failed to resend email:", (emailErr as Error).message);
-  }
+  const { code, emailSent } = await createAndSendOtp(email, user.name);
+  const isDev = process.env["NODE_ENV"] !== "production";
 
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    ...(isDev && !emailSent ? { devOtp: code } : {}),
+  });
 });
 
 // POST /auth/login

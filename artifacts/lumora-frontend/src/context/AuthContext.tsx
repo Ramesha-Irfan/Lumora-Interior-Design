@@ -16,9 +16,9 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (data: SignupData) => Promise<{ ok: boolean; pending?: boolean; error?: string }>;
+  signup: (data: SignupData) => Promise<{ ok: boolean; pending?: boolean; devOtp?: string; error?: string }>;
   verifyOtp: (email: string, code: string) => Promise<{ ok: boolean; error?: string }>;
-  resendOtp: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  resendOtp: (email: string) => Promise<{ ok: boolean; devOtp?: string; error?: string }>;
   logout: () => void;
   updateUser: (partial: Partial<User>) => Promise<void>;
 }
@@ -54,10 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signup = useCallback(
-    async (data: SignupData): Promise<{ ok: boolean; pending?: boolean; error?: string }> => {
+    async (data: SignupData): Promise<{ ok: boolean; pending?: boolean; devOtp?: string; error?: string }> => {
       try {
-        await apiPost<{ pending: boolean }>("/auth/register", data);
-        return { ok: true, pending: true };
+        const res = await apiPost<{ pending: boolean; devOtp?: string }>("/auth/register", data);
+        return { ok: true, pending: true, devOtp: res.devOtp };
       } catch (err) {
         return { ok: false, error: (err as Error).message };
       }
@@ -80,10 +80,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const resendOtp = useCallback(
-    async (email: string): Promise<{ ok: boolean; error?: string }> => {
+    async (email: string): Promise<{ ok: boolean; devOtp?: string; error?: string }> => {
       try {
-        await apiPost<{ ok: boolean }>("/auth/resend-otp", { email });
-        return { ok: true };
+        const res = await apiPost<{ ok: boolean; devOtp?: string }>("/auth/resend-otp", { email });
+        return { ok: true, devOtp: res.devOtp };
       } catch (err) {
         return { ok: false, error: (err as Error).message };
       }
