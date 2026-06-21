@@ -1,18 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
-import { eq, and, gt, isNull } from "drizzle-orm";
-import { db, usersTable, otpVerificationsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, usersTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
 const JWT_SECRET = process.env["SESSION_SECRET"] ?? "lumora-dev-secret";
-const OTP_EXPIRY_MINUTES = 10;
-
-function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
 
 function getAvatarInitials(name: string): string {
   return name
@@ -23,104 +17,16 @@ function getAvatarInitials(name: string): string {
     .join("");
 }
 
-function makeTransport() {
-  const user = process.env["SMTP_USER"];
-  // App Passwords are shown with spaces (e.g. "coqf rtmw xvdw yygi") but must be used without them
-  const pass = (process.env["SMTP_PASS"] ?? "").replace(/\s/g, "") || undefined;
-  if (!user || !pass) return null;
-
-  const customHost = process.env["SMTP_HOST"];
-  if (customHost) {
-    const port = Number(process.env["SMTP_PORT"] ?? "587");
-    return nodemailer.createTransport({ host: customHost, port, secure: port === 465, auth: { user, pass } });
-  }
-
-  // Auto-detect provider from email domain
-  if (user.endsWith("@gmail.com") || user.endsWith("@googlemail.com")) {
-    return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
-  }
-  if (user.endsWith("@outlook.com") || user.endsWith("@hotmail.com") || user.endsWith("@live.com")) {
-    return nodemailer.createTransport({ service: "hotmail", auth: { user, pass } });
-  }
-  if (user.endsWith("@yahoo.com")) {
-    return nodemailer.createTransport({ service: "yahoo", auth: { user, pass } });
-  }
-
-  return nodemailer.createTransport({ host: "smtp.gmail.com", port: 587, secure: false, auth: { user, pass } });
-}
-
-async function sendOtpEmail(email: string, code: string, name: string): Promise<void> {
-  const transport = makeTransport();
-  const from = process.env["SMTP_FROM"] ?? process.env["SMTP_USER"] ?? "noreply@lumora.ai";
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#161313;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#161313;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="520" cellpadding="0" cellspacing="0" style="background:#1E1A18;border-radius:24px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
-        <tr>
-          <td style="padding:40px 48px 32px;text-align:center;">
-            <div style="display:inline-block;background:#A78B75;border-radius:14px;padding:10px 16px;margin-bottom:24px;">
-              <span style="color:#FAF7F2;font-size:18px;font-weight:600;letter-spacing:0.12em;">lumora.</span>
-            </div>
-            <h1 style="color:#FAF7F2;font-size:26px;font-weight:300;margin:0 0 8px;letter-spacing:-0.01em;">Verify your email</h1>
-            <p style="color:#8E8178;font-size:14px;margin:0 0 32px;line-height:1.6;">
-              Hi ${name}, use the code below to complete your registration.<br>
-              It expires in ${OTP_EXPIRY_MINUTES} minutes.
-            </p>
-            <div style="background:#161313;border:1px solid rgba(167,139,117,0.25);border-radius:16px;padding:28px 40px;margin-bottom:28px;">
-              <p style="color:#8E8178;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 12px;">Your verification code</p>
-              <p style="color:#A78B75;font-size:42px;font-weight:700;letter-spacing:0.3em;margin:0;">${code}</p>
-            </div>
-            <p style="color:#8E8178;font-size:12px;margin:0;line-height:1.7;">
-              If you didn't request this, you can safely ignore this email.<br>
-              Never share this code with anyone.
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#161313;padding:20px 48px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);">
-            <p style="color:rgba(255,255,255,0.2);font-size:11px;margin:0;">© 2026 Lumora AI. All rights reserved.</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-
-  if (transport) {
-    await transport.sendMail({
-      from,
-      to: email,
-      subject: `${code} — Your Lumora AI verification code`,
-      html,
-    });
-  } else {
-    console.log(`[OTP] Email not configured. Code for ${email}: ${code}`);
-  }
-}
-
-async function createAndSendOtp(email: string, name: string): Promise<{ code: string; emailSent: boolean }> {
-  const code = generateOtp();
-  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
-  await db.delete(otpVerificationsTable).where(eq(otpVerificationsTable.email, email));
-  await db.insert(otpVerificationsTable).values({ email, code, expiresAt });
-
-  let emailSent = false;
-  try {
-    await sendOtpEmail(email, code, name);
-    emailSent = true;
-  } catch (err) {
-    console.error("[OTP] Email send failed:", (err as Error).message);
-    console.log(`[OTP] DEV CODE for ${email}: ${code}`);
-  }
-
-  return { code, emailSent };
+function makeUserResponse(user: typeof usersTable.$inferSelect) {
+  return {
+    name: user.name,
+    username: user.username,
+    email: user.email,
+    plan: user.plan,
+    avatarInitials: getAvatarInitials(user.name),
+    avatarColor: user.avatarColor,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
 
 // POST /auth/register
@@ -143,116 +49,32 @@ router.post("/auth/register", async (req: Request, res: Response) => {
   }
 
   const existingEmail = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-  if (existingEmail.length && existingEmail[0]!.isVerified) {
+  if (existingEmail.length) {
     res.status(409).json({ error: "This email is already registered." });
     return;
   }
 
   const existingUsername = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
-  if (existingUsername.length && existingUsername[0]!.isVerified) {
+  if (existingUsername.length) {
     res.status(409).json({ error: "This username is already taken." });
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  if (existingEmail.length) {
-    await db.update(usersTable)
-      .set({ name, username, passwordHash })
-      .where(eq(usersTable.email, email));
-  } else {
-    await db.insert(usersTable).values({ name, username, email, passwordHash });
-  }
-
-  const { code, emailSent } = await createAndSendOtp(email, name);
-  const isDev = process.env["NODE_ENV"] !== "production";
-
-  res.status(200).json({
-    pending: true,
-    email,
-    ...(isDev && !emailSent ? { devOtp: code } : {}),
-  });
-});
-
-// POST /auth/verify-otp
-router.post("/auth/verify-otp", async (req: Request, res: Response) => {
-  const { email, code } = req.body as Record<string, string>;
-
-  if (!email || !code) {
-    res.status(400).json({ error: "Email and code are required." });
-    return;
-  }
-
-  const [otp] = await db
-    .select()
-    .from(otpVerificationsTable)
-    .where(
-      and(
-        eq(otpVerificationsTable.email, email),
-        eq(otpVerificationsTable.code, code.trim()),
-        isNull(otpVerificationsTable.usedAt),
-        gt(otpVerificationsTable.expiresAt, new Date()),
-      ),
-    )
-    .limit(1);
-
-  if (!otp) {
-    res.status(400).json({ error: "Invalid or expired verification code." });
-    return;
-  }
-
-  await db.update(otpVerificationsTable)
-    .set({ usedAt: new Date() })
-    .where(eq(otpVerificationsTable.id, otp.id));
-
   const [user] = await db
-    .update(usersTable)
-    .set({ isVerified: true })
-    .where(eq(usersTable.email, email))
+    .insert(usersTable)
+    .values({ name, username, email, passwordHash, isVerified: true })
     .returning();
 
   if (!user) {
-    res.status(404).json({ error: "User not found." });
+    res.status(500).json({ error: "Failed to create account." });
     return;
   }
 
   const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
 
-  res.json({
-    token,
-    user: {
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      plan: user.plan,
-      avatarInitials: getAvatarInitials(user.name),
-      avatarColor: user.avatarColor,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
-});
-
-// POST /auth/resend-otp
-router.post("/auth/resend-otp", async (req: Request, res: Response) => {
-  const { email } = req.body as Record<string, string>;
-  if (!email) {
-    res.status(400).json({ error: "Email is required." });
-    return;
-  }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-  if (!user) {
-    res.status(404).json({ error: "User not found." });
-    return;
-  }
-
-  const { code, emailSent } = await createAndSendOtp(email, user.name);
-  const isDev = process.env["NODE_ENV"] !== "production";
-
-  res.json({
-    ok: true,
-    ...(isDev && !emailSent ? { devOtp: code } : {}),
-  });
+  res.status(201).json({ token, user: makeUserResponse(user) });
 });
 
 // POST /auth/login
@@ -271,25 +93,9 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     return;
   }
 
-  if (!user.isVerified) {
-    res.status(403).json({ error: "Please verify your email before signing in.", unverified: true });
-    return;
-  }
-
   const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
 
-  res.json({
-    token,
-    user: {
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      plan: user.plan,
-      avatarInitials: getAvatarInitials(user.name),
-      avatarColor: user.avatarColor,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.json({ token, user: makeUserResponse(user) });
 });
 
 // GET /auth/me
@@ -309,15 +115,7 @@ router.get("/auth/me", async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      plan: user.plan,
-      avatarInitials: getAvatarInitials(user.name),
-      avatarColor: user.avatarColor,
-      createdAt: user.createdAt.toISOString(),
-    });
+    res.json(makeUserResponse(user));
   } catch {
     res.status(401).json({ error: "Invalid token." });
   }
@@ -346,15 +144,7 @@ router.put("/auth/me", async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      plan: user.plan,
-      avatarInitials: getAvatarInitials(user.name),
-      avatarColor: user.avatarColor,
-      createdAt: user.createdAt.toISOString(),
-    });
+    res.json(makeUserResponse(user));
   } catch {
     res.status(401).json({ error: "Invalid token." });
   }

@@ -16,9 +16,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (data: SignupData) => Promise<{ ok: boolean; pending?: boolean; devOtp?: string; error?: string }>;
-  verifyOtp: (email: string, code: string) => Promise<{ ok: boolean; error?: string }>;
-  resendOtp: (email: string) => Promise<{ ok: boolean; devOtp?: string; error?: string }>;
+  signup: (data: SignupData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   updateUser: (partial: Partial<User>) => Promise<void>;
 }
@@ -54,36 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signup = useCallback(
-    async (data: SignupData): Promise<{ ok: boolean; pending?: boolean; devOtp?: string; error?: string }> => {
+    async (data: SignupData): Promise<{ ok: boolean; error?: string }> => {
       try {
-        const res = await apiPost<{ pending: boolean; devOtp?: string }>("/auth/register", data);
-        return { ok: true, pending: true, devOtp: res.devOtp };
-      } catch (err) {
-        return { ok: false, error: (err as Error).message };
-      }
-    },
-    [],
-  );
-
-  const verifyOtp = useCallback(
-    async (email: string, code: string): Promise<{ ok: boolean; error?: string }> => {
-      try {
-        const res = await apiPost<AuthResponse>("/auth/verify-otp", { email, code });
+        const res = await apiPost<AuthResponse>("/auth/register", data);
         setToken(res.token);
         setUser(res.user);
         return { ok: true };
-      } catch (err) {
-        return { ok: false, error: (err as Error).message };
-      }
-    },
-    [],
-  );
-
-  const resendOtp = useCallback(
-    async (email: string): Promise<{ ok: boolean; devOtp?: string; error?: string }> => {
-      try {
-        const res = await apiPost<{ ok: boolean; devOtp?: string }>("/auth/resend-otp", { email });
-        return { ok: true, devOtp: res.devOtp };
       } catch (err) {
         return { ok: false, error: (err as Error).message };
       }
@@ -117,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, isLoading, login, signup, verifyOtp, resendOtp, logout, updateUser }}
+      value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>
