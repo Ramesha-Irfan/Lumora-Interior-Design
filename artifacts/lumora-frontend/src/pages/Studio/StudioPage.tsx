@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Download, Share2, Heart, CheckCircle, X, Image } from "lucide-react";
 import BeforeAfterSlider from "@/components/common/BeforeAfterSlider";
 import { STYLES } from "@/services/mockData";
-import { STUDIO_STYLE_IMAGES, STUDIO_STYLE_THUMBNAILS, getFallbackImage } from "@/services/unsplash";
+import { STUDIO_STYLE_THUMBNAILS, getFallbackImage, getRandomStyleImage } from "@/services/unsplash";
 
 const ORIGINAL_IMAGE = "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&q=80&fit=crop&auto=format";
 
@@ -18,6 +18,7 @@ export default function Studio() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [shareLabel, setShareLabel] = useState<"Share" | "Copied!" | "Shared!">("Share");
+  const [generatedImage, setGeneratedImage] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (file?: File) => {
@@ -36,6 +37,9 @@ export default function Studio() {
   const handleGenerate = () => {
     setPhase("generating");
     setProgress(0);
+    setSaved(false);
+    const newImage = getRandomStyleImage(selectedStyle, 900);
+    setGeneratedImage(newImage);
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -55,7 +59,6 @@ export default function Studio() {
     setSaved(false);
   };
 
-  const generatedImage = STUDIO_STYLE_IMAGES[selectedStyle] ?? STUDIO_STYLE_IMAGES.luxury;
   const selectedStyleName = STYLES.find((s) => s.id === selectedStyle)?.name ?? "Luxury";
 
   const handleDownload = async () => {
@@ -211,7 +214,10 @@ export default function Studio() {
                   const thumbSrc = STUDIO_STYLE_THUMBNAILS[style.id] ?? style.image;
                   return (
                     <motion.button key={style.id} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedStyle(style.id)}
+                      onClick={() => {
+                        setSelectedStyle(style.id);
+                        if (phase === "done") setPhase("uploaded");
+                      }}
                       data-testid={`button-style-${style.id}`}
                       className="shrink-0 relative w-28 overflow-hidden transition-all duration-200"
                       style={{

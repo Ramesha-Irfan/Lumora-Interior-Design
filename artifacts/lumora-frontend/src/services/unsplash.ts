@@ -142,6 +142,30 @@ export function getFallbackImage(): string {
   return FALLBACK_IMAGE;
 }
 
+const STYLE_ID_TO_TYPE: Record<string, string> = {
+  minimalist:   "Minimalist",
+  luxury:       "Luxury",
+  zen:          "Zen",
+  gaming:       "Gaming",
+  cyberpunk:    "Cyberpunk",
+  scandinavian: "Scandinavian",
+  modern:       "Modern",
+  bedroom:      "Bedroom",
+  kitchen:      "Kitchen",
+  office:       "Office",
+  "living room":"Living Room",
+};
+
+export function getRandomStyleImage(styleId: string, width = 900): string {
+  const type = STYLE_ID_TO_TYPE[styleId.toLowerCase()];
+  const pool = type
+    ? CURATED_PHOTOS.filter((p) => p.type === type)
+    : CURATED_PHOTOS;
+  if (pool.length === 0) return FALLBACK_IMAGE;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  return buildUnsplashUrl(pick.unsplashId, width);
+}
+
 export const STUDIO_STYLE_IMAGES: Record<string, string> = {
   minimalist: buildUnsplashUrl("1586023492125-27b2c045efd7", 900),
   luxury:     buildUnsplashUrl("1554995207-c18c203602cb",    900),
