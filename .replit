@@ -34,3 +34,9 @@ externalPort = 3002
 [[ports]]
 localPort = 21203
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+SMTP_HOST = "smtp-relay.brevo.com"
+SMTP_PORT = "587"

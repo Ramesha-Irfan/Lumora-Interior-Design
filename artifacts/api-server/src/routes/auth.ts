@@ -25,7 +25,8 @@ function getAvatarInitials(name: string): string {
 
 function makeTransport() {
   const user = process.env["SMTP_USER"];
-  const pass = process.env["SMTP_PASS"];
+  // App Passwords are shown with spaces (e.g. "coqf rtmw xvdw yygi") but must be used without them
+  const pass = (process.env["SMTP_PASS"] ?? "").replace(/\s/g, "") || undefined;
   if (!user || !pass) return null;
 
   const customHost = process.env["SMTP_HOST"];
