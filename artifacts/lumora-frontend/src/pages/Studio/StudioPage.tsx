@@ -16,6 +16,8 @@ export default function Studio() {
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [shareLabel, setShareLabel] = useState<"Share" | "Copied!" | "Shared!">("Share");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (file?: File) => {
@@ -55,6 +57,53 @@ export default function Studio() {
 
   const generatedImage = STUDIO_STYLE_IMAGES[selectedStyle] ?? STUDIO_STYLE_IMAGES.luxury;
   const selectedStyleName = STYLES.find((s) => s.id === selectedStyle)?.name ?? "Luxury";
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(generatedImage);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lumora-${selectedStyle}-design.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // fallback: open in new tab
+      window.open(generatedImage, "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "Lumora AI Interior Design",
+      text: `Check out this ${selectedStyleName} interior design I created with Lumora AI!`,
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+        setShareLabel("Shared!");
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareLabel("Copied!");
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareLabel("Copied!");
+      } catch {
+        setShareLabel("Copied!");
+      }
+    }
+    setTimeout(() => setShareLabel("Share"), 2500);
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-20" style={{ background: "#161313" }}>
@@ -275,10 +324,13 @@ export default function Studio() {
                       <motion.button
                         whileHover={{ backgroundColor: "#8D705E", boxShadow: "0 12px 30px rgba(167,139,117,0.3)" }}
                         whileTap={{ scale: 0.97 }}
+                        onClick={handleDownload}
+                        disabled={downloading}
                         data-testid="button-download"
                         className="flex-1 flex items-center justify-center gap-2 py-3 text-white text-sm font-medium transition-all duration-300"
-                        style={{ background: "#A78B75", borderRadius: 999 }}>
-                        <Download className="w-4 h-4" /> Download
+                        style={{ background: "#A78B75", borderRadius: 999, opacity: downloading ? 0.7 : 1 }}>
+                        <Download className="w-4 h-4" />
+                        {downloading ? "Downloading…" : "Download"}
                       </motion.button>
                       <motion.button
                         whileHover={{ borderColor: "#A78B75" }}
@@ -298,10 +350,16 @@ export default function Studio() {
                       <motion.button
                         whileHover={{ borderColor: "rgba(255,255,255,0.2)", color: "#FAF7F2" }}
                         whileTap={{ scale: 0.97 }}
+                        onClick={handleShare}
                         data-testid="button-share"
                         className="flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium transition-all duration-300"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, color: "#8E8178" }}>
-                        <Share2 className="w-4 h-4" /> Share
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          border: `1px solid ${shareLabel !== "Share" ? "rgba(167,139,117,0.4)" : "rgba(255,255,255,0.08)"}`,
+                          borderRadius: 999,
+                          color: shareLabel !== "Share" ? "#A78B75" : "#8E8178",
+                        }}>
+                        <Share2 className="w-4 h-4" /> {shareLabel}
                       </motion.button>
                     </div>
                   </motion.div>
