@@ -1,12 +1,16 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { usersTable } from "./users";
+import { sql } from "drizzle-orm";
 
-export const otpVerificationsTable = pgTable("otp_verifications", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull(),
+export const otpVerificationsTable = sqliteTable("otp_verifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   code: text("code").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
-export type OtpVerification = typeof otpVerificationsTable.$inferSelect;
+export type DbOtpVerification = typeof otpVerificationsTable.$inferSelect;
+export type InsertOtpVerification = typeof otpVerificationsTable.$inferInsert;

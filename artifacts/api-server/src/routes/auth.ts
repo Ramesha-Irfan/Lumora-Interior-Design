@@ -18,6 +18,10 @@ function getAvatarInitials(name: string): string {
 }
 
 function makeUserResponse(user: typeof usersTable.$inferSelect) {
+  const createdAt =
+    typeof user.createdAt === "string"
+      ? user.createdAt
+      : (user.createdAt as Date).toISOString();
   return {
     name: user.name,
     username: user.username,
@@ -25,7 +29,7 @@ function makeUserResponse(user: typeof usersTable.$inferSelect) {
     plan: user.plan,
     avatarInitials: getAvatarInitials(user.name),
     avatarColor: user.avatarColor,
-    createdAt: user.createdAt.toISOString(),
+    createdAt,
   };
 }
 
