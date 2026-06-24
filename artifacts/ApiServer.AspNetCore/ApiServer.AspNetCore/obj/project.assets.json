@@ -919,11 +919,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Yes\\Downloads\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\ApiServer.AspNetCore.csproj",
+      "projectUniqueName": "C:\\Users\\Yes\\OneDrive\\Desktop\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\ApiServer.AspNetCore.csproj",
       "projectName": "ApiServer.AspNetCore",
-      "projectPath": "C:\\Users\\Yes\\Downloads\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\ApiServer.AspNetCore.csproj",
+      "projectPath": "C:\\Users\\Yes\\OneDrive\\Desktop\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\ApiServer.AspNetCore.csproj",
       "packagesPath": "C:\\Users\\Yes\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Yes\\Downloads\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\obj\\",
+      "outputPath": "C:\\Users\\Yes\\OneDrive\\Desktop\\Unsplash-Gallery-Update\\artifacts\\ApiServer.AspNetCore\\ApiServer.AspNetCore\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Yes\\AppData\\Roaming\\NuGet\\NuGet.Config"

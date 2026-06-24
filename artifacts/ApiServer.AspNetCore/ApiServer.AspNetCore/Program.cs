@@ -15,7 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 
 // Configure JWT Authentication
-var jwtSecret = Environment.GetEnvironmentVariable("SESSION_SECRET") ?? "lumora-dev-secret";
+var jwtSecret = Environment.GetEnvironmentVariable("SESSION_SECRET") ?? "lumora-dev-secret-key-min-32-chars!";
 var key = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(x =>

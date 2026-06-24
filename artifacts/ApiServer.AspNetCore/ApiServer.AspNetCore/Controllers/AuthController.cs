@@ -160,7 +160,7 @@ public class AuthController : ControllerBase
     private string GenerateToken(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var secret = Environment.GetEnvironmentVariable("SESSION_SECRET") ?? "lumora-dev-secret";
+        var secret = Environment.GetEnvironmentVariable("SESSION_SECRET") ?? "lumora-dev-secret-key-min-32-chars!";
         var key = Encoding.ASCII.GetBytes(secret);
         
         var tokenDescriptor = new SecurityTokenDescriptor
