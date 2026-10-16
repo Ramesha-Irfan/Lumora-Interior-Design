@@ -14,6 +14,6 @@ sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
 export const db = drizzle(sqlite, { schema });
-export const pool = sqlite;
+export const pool: Database = sqlite;
 
 export * from "./schema";
