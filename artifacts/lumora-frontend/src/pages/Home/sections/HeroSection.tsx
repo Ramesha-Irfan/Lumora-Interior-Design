@@ -12,7 +12,7 @@ export function HeroSection() {
           className="text-[11px] tracking-[0.32em] uppercase mb-8 font-medium"
           style={{ color: "#A78B75" }}
         >
-          Premium AI Interior Design
+          Premium Interior Design
         </motion.p>
 
         <motion.h1
