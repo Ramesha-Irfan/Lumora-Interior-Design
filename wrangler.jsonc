@@ -1,7 +1,8 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "lumora-interior-design",
   "compatibility_date": "2026-10-01",
+  "previews": {},
   "assets": {
     "directory": "artifacts/lumora-frontend/dist/public",
     "not_found_handling": "single-page-application"
