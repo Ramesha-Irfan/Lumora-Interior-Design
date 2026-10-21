@@ -90,12 +90,8 @@ export default function Signup() {
     if (!form.name.trim()) e.name = "Full name is required.";
     if (!form.username.trim()) e.username = "Username is required.";
     else if (!/^[a-z0-9_]+$/i.test(form.username)) e.username = "Only letters, numbers, underscores.";
-    if (!form.email) e.email = "Email is required.";
-    else if (
-      !/^[^\s@]+@[^\s@]+$/.test(form.email) ||
-      /\.[a-z]{2,}$/i.test(form.email)
-    )
-      e.email = "Enter a valid email without .com or another extension.";
+    else if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(form.email))
+      e.email = "Enter a valid email."
     if (!form.password) e.password = "Password is required.";
     else if (form.password.length < 8) e.password = "Must be at least 8 characters.";
     if (!form.confirm) e.confirm = "Please confirm your password.";
