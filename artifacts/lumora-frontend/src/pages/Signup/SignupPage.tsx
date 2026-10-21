@@ -91,11 +91,8 @@ export default function Signup() {
     if (!form.username.trim()) e.username = "Username is required.";
     else if (!/^[a-z0-9_]+$/i.test(form.username)) e.username = "Only letters, numbers, underscores.";
     if (!form.email) e.email = "Email is required.";
-    else if (
-      !/^[^\s@]+@[^\s@]+$/.test(form.email) ||
-      /\.[a-z]{2,}$/i.test(form.email)
-    )
-      e.email = "Enter a valid email without .com or another extension.";
+    else if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(form.email))
+      e.email = "Enter a valid email.";
     if (!form.password) e.password = "Password is required.";
     else if (form.password.length < 8) e.password = "Must be at least 8 characters.";
     if (!form.confirm) e.confirm = "Please confirm your password.";
@@ -222,7 +219,7 @@ export default function Signup() {
               <LuxField label="Username" value={form.username} onChange={v => update("username", v)} placeholder="alexrivera" autoComplete="username" icon={AtSign} error={errors.username} />
             </div>
 
-            <LuxField label="Email Address" type="text" value={form.email} onChange={v => update("email", v)} placeholder="you@example.com" autoComplete="email" icon={Mail} error={errors.email} />
+            <LuxField label="Email Address" type="email" value={form.email} onChange={v => update("email", v)} placeholder="you@example.com" autoComplete="email" icon={Mail} error={errors.email} />
 
             <div>
               <LuxField label="Password" type={showPass ? "text" : "password"} value={form.password} onChange={v => update("password", v)}
