@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
@@ -8,6 +8,13 @@ export default function Settings() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? "");
+      setUsername(user.username ?? "");
+    }
+  }, [user]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
