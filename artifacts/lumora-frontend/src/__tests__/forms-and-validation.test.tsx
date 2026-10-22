@@ -122,6 +122,19 @@ describe("Frontend Forms and Validation Suite", () => {
         expect(screen.queryByText("Only letters, numbers, underscores.")).not.toBeInTheDocument();
       });
     });
+    it("displays error message for invalid email format", async () => {
+      renderWithProviders(<SignupPage />);
+      const emailInput = screen.getByPlaceholderText(/you@example\.com/i);
+      fireEvent.change(emailInput, { target: { value: "invalid-email" } });
+      const form = emailInput.closest("form")!;
+      fireEvent.submit(form);
+      expect(await screen.findByText("Enter a valid email.")).toBeInTheDocument();
+      fireEvent.change(emailInput, { target: { value: "designer@lumora.design" } });
+      fireEvent.submit(form);
+      await waitFor(() => {
+        expect(screen.queryByText("Enter a valid email.")).not.toBeInTheDocument();
+      });
+    });
 
     it("enforces minimum password length and confirmation match", async () => {
       renderWithProviders(<SignupPage />);
