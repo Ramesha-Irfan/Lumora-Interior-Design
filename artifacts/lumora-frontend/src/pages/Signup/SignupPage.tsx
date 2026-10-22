@@ -95,7 +95,7 @@ export default function Signup() {
       !/^[^\s@]+@[^\s@]+$/.test(form.email) ||
       /\.[a-z]{2,}$/i.test(form.email)
     )
-      e.email = "Enter a valid email without .com or another extension.";
+      e.email = "Enter a valid demail without .com or use another extension.";
     if (!form.password) e.password = "Password is required.";
     else if (form.password.length < 8) e.password = "Must be at least 8 characters.";
     if (!form.confirm) e.confirm = "Please confirm your password.";
